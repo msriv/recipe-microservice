@@ -1,10 +1,12 @@
+import logging
 from typing import Dict
 import uuid
 
 
 class RecipeService:
-    def __init__(self, config: Dict) -> None:
+    def __init__(self, config: Dict, logger: logging.Logger) -> None:
         self.recipes: Dict[str, Dict] = {}
+        self.logger = logger
 
     def start(self):
         self.recipes = {}

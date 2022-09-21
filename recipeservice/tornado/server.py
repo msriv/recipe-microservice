@@ -1,10 +1,16 @@
 import asyncio
+import logging
+import logging.config
+import aiotask_context as context
 from typing import Dict
+from recipeservice import LOGGER_NAME
 from recipeservice.tornado.app import make_recipeservice_app
 from recipeservice.service import RecipeService
 import tornado.web
 import yaml
 import argparse
+
+from recipeservice.utils import logutils
 
 
 def parse_args(args=None):
@@ -45,40 +51,74 @@ def run_server(
     service: RecipeService,
     config: Dict,
     port: int,
-    debug: bool
+    debug: bool,
+    logger: logging.Logger
 ):
-    # name = config['service']['name']
+    name = config['service']['name']
     loop = asyncio.get_event_loop()
+    loop.set_task_factory(context.task_factory)
+
+    # Start recipe service
     service.start()
 
+    # Bind http server to port
     http_server_args = {
         'decompress_request': True
     }
 
     http_server = app.listen(port, '', **http_server_args)
+    logutils.log(
+        logger,
+        logging.INFO,
+        message='STARTING',
+        service_name=name,
+        port=port
+    )
+
     try:
         loop.run_forever()
     except KeyboardInterrupt:
         pass
     finally:
         loop.stop()
+        logutils.log(
+            logger,
+            logging.INFO,
+            message='SHUTTING DOWN',
+            service_name=name
+        )
+
         http_server.stop()
         loop.run_until_complete(
             loop.shutdown_asyncgens()
         )
         service.stop()
         loop.close()
+        logutils.log(
+            logger,
+            logging.INFO,
+            message='STOPPED',
+            service_name=name
+        )
 
 
 def main(args=parse_args()):
     config = yaml.load(args.config.read(), Loader=yaml.SafeLoader)
-    recipe_service, recipe_app = make_recipeservice_app(config, args.debug)
+
+    # First thing: set logging config
+    logging.config.dictConfig(config['logging'])
+    logger = logging.getLogger(LOGGER_NAME)
+
+    recipe_service, recipe_app = make_recipeservice_app(
+        config, args.debug, logger=logger
+    )
     run_server(
         app=recipe_app,
         service=recipe_service,
         config=config,
         port=args.port,
-        debug=args.debug
+        debug=args.debug,
+        logger=logger
     )
 
 

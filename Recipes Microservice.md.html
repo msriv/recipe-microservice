@@ -1,0 +1,118 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><title>Recipes Microservice.md</title><style></style></head><body id="preview">
+<h1 class="code-line" data-line-start=0 data-line-end=1><a id="Recipes_Microservice_0"></a>Recipes Microservice</h1>
+<h2 class="code-line" data-line-start=2 data-line-end=3><a id="API_Model_2"></a>API Model</h2>
+<p class="has-line-data" data-line-start="4" data-line-end="6"><code>[POST]</code> <code>/v1/recipe</code><br>
+Create a recipe item</p>
+<p class="has-line-data" data-line-start="7" data-line-end="9"><code>[GET]</code> <code>/v1/recipe/{id}</code><br>
+Get a specific recipe</p>
+<p class="has-line-data" data-line-start="10" data-line-end="12"><code>[GET]</code> <code>/v1/recipes</code><br>
+Get a list of all the recipes</p>
+<p class="has-line-data" data-line-start="13" data-line-end="15"><code>[PUT]</code> <code>/v1/recipe/{id}</code><br>
+Update a recipe</p>
+<p class="has-line-data" data-line-start="16" data-line-end="18"><code>[DELETE]</code> <code>/v1/recipe/{id}</code><br>
+Delete a recipe</p>
+<h2 class="code-line" data-line-start=19 data-line-end=20><a id="Data_Model_19"></a>Data Model</h2>
+<p class="has-line-data" data-line-start="20" data-line-end="21">Schema of the recipe</p>
+<pre><code class="has-line-data" data-line-start="22" data-line-end="124">{
+    &quot;$schema&quot;: &quot;http://json-schema.org/draft-07/schema#&quot;,
+    &quot;title&quot;: &quot;Schema of an Recipe listings site&quot;,
+    &quot;definitions&quot;: {
+        &quot;author&quot;: {
+            &quot;$id&quot;: &quot;#author&quot;,
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;name&quot;: {
+                    &quot;type&quot;: &quot;string&quot;
+                },
+                &quot;profile&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;pattern&quot;: &quot;https?:\/\/(www\.)?[<a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="321f531f48731f68021f0b72">[email&#160;protected]</a>:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&amp;//=]*)&quot;
+                },
+            },
+            &quot;required&quot;: [
+                &quot;name&quot;
+            ],
+            &quot;additionalProperties&quot;: false
+        },
+        &quot;nutrition&quot;: {
+            &quot;$id&quot;: &quot;#nutrition&quot;,
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;servingSize&quot;: {
+                    &quot;type&quot;: &quot;string&quot;
+                },
+                &quot;calories&quot;: {
+                    &quot;type&quot;: &quot;number&quot;
+                }
+            },
+            &quot;required&quot;: [
+                &quot;servingSize&quot;,
+                &quot;calories&quot;
+            ],
+            &quot;additionalProperties&quot;: false
+        }
+        &quot;recipeEntry&quot;: {
+            &quot;$id&quot;: &quot;#recipeEntry&quot;,
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;properties&quot;: {
+                &quot;name&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                },
+                &quot;author&quot;: {
+                    &quot;$ref&quot;: &quot;#/definitions/author&quot;
+                },
+                &quot;datePublished&quot;: {
+                    &quot;type&quot;: &quot;date&quot;
+                }
+                &quot;description&quot;: {
+                    &quot;type&quot;: &quot;string&quot;,
+                    &quot;minLength&quot;: 10,
+                    &quot;maxLength&quot;: 500
+                },
+                &quot;rating&quot;: {
+                    &quot;type&quot;: &quot;number&quot;
+                    &quot;minimum&quot;: 0,
+                    &quot;maximum&quot;: 5
+                },
+                &quot;prepTime&quot;: {
+                    &quot;type&quot;: &quot;time&quot;
+                }
+                &quot;cookTime&quot;: {
+                    &quot;type&quot;: &quot;time&quot;
+                },
+                &quot;ingredients&quot;: {
+                    &quot;type&quot;: &quot;array&quot;,
+                    &quot;items&quot;: {
+                        &quot;type&quot;: &quot;string&quot;,
+                        &quot;minLength&quot;: 1
+                    }
+                },
+                &quot;instructions&quot;: {
+                    &quot;type&quot;: &quot;array&quot;,
+                    &quot;items&quot;: {
+                        &quot;type&quot;: &quot;string&quot;,
+                        &quot;minLength&quot;: 1
+                    }
+                },
+                &quot;nutrition&quot;: {
+                    &quot;$ref&quot;: &quot;#/definitions/nutrition&quot;
+                }
+            },
+            &quot;required&quot;: [
+                &quot;name&quot;,
+                &quot;author&quot;,
+                &quot;datePublished&quot;,
+                &quot;description&quot;,
+                &quot;prepTime&quot;,
+                &quot;cookTime&quot;,
+                &quot;ingredients&quot;,
+                &quot;instructions&quot;,
+                &quot;nutrition&quot;
+            ],
+            &quot;additionalProperties&quot;: false
+        }   
+    }
+    &quot;$ref&quot;: &quot;#/defintions/recipeEntry&quot;
+}
+</code></pre>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script></body></html>

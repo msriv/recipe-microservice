@@ -4,7 +4,7 @@ from typing import Any, Awaitable, Dict, Optional, Tuple
 from recipeservice.service import RecipeService
 import tornado.web
 
-RECIPE_REGEX = r'/v1/recipes'
+RECIPE_REGEX = r'/v1/recipes/?'
 RECIPE_ENTRY_REGEX = r'/v1/recipes/(?P<id>[a-zA-Z0-9-]+)/?'
 RECIPE_ENTRY_URI_FORMAT_STR = r'/v1/recipes/{id}'
 

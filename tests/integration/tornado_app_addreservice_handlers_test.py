@@ -1,0 +1,1 @@
+ADDRESSBOOK_ENTRY_URI_FORMAT_STR = r'/addresses/{id}'

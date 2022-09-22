@@ -10,7 +10,7 @@ RECIPE_SERVICE_TEST_DATA_DIR = os.path.abspath(os.path.dirname(__file__))
 
 RECIPE_DATA_DIR = os.path.abspath(os.path.join(
     RECIPE_SERVICE_TEST_DATA_DIR,
-    'recipes'
+    'test_data'
 ))
 
 RECIPE_FILES = glob.glob(RECIPE_DATA_DIR + '/*.json')

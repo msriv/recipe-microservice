@@ -12,25 +12,25 @@ from tests.unit.tornado_app_handlers_test import (
 
 
 class TestRecipeServiceApp(RecipeServiceTornadoAppTestSetup):
-    def test_address_book_endpoints(self):
-        # Get all addresses in the address book, must be ZERO
+    def test_recipe_endpoints(self):
+        # Get all Recipes in the recipe list, must be ZERO
         r = self.fetch(
             RECIPE_ENTRY_URI_FORMAT_STR.format(id=''),
             method='GET',
             headers=None,
         )
-        all_addrs = json.loads(r.body.decode('utf-8'))
-        self.assertEqual(r.code, 200, all_addrs)
-        self.assertEqual(len(all_addrs), 0, all_addrs)
-        # Add an address
+        all_recipes = json.loads(r.body.decode('utf-8'))
+        self.assertEqual(r.code, 200, all_recipes)
+        self.assertEqual(len(all_recipes), 0, all_recipes)
+        # Add a Recipe
         r = self.fetch(
             RECIPE_ENTRY_URI_FORMAT_STR.format(id=''),
             method='POST',
             headers=self.headers,
-            body=json.dumps(self.addr0),
+            body=json.dumps(self.recipe0),
         )
         self.assertEqual(r.code, 201)
-        addr_uri = r.headers['Location']
+        recipe_uri = r.headers['Location']
         # POST: error cases
         r = self.fetch(
             RECIPE_ENTRY_URI_FORMAT_STR.format(id=''),
@@ -40,15 +40,15 @@ class TestRecipeServiceApp(RecipeServiceTornadoAppTestSetup):
         )
         self.assertEqual(r.code, 400)
         self.assertEqual(r.reason, 'Invalid JSON body')
-        # Get the added address
+        # Get the added Recipe
         r = self.fetch(
-            addr_uri,
+            recipe_uri,
             method='GET',
             headers=None,
         )
         self.assertEqual(r.code, 200)
         self.assertEqual(
-            self.addr0,
+            self.recipe0,
             json.loads(r.body.decode('utf-8'))
         )
         # GET: error cases
@@ -58,27 +58,27 @@ class TestRecipeServiceApp(RecipeServiceTornadoAppTestSetup):
             headers=None,
         )
         self.assertEqual(r.code, 404)
-        # Update that address
+        # Update that Recipe
         r = self.fetch(
-            addr_uri,
+            recipe_uri,
             method='PUT',
             headers=self.headers,
-            body=json.dumps(self.addr1),
+            body=json.dumps(self.recipe1),
         )
         self.assertEqual(r.code, 204)
         r = self.fetch(
-            addr_uri,
+            recipe_uri,
             method='GET',
             headers=None,
         )
         self.assertEqual(r.code, 200)
         self.assertEqual(
-            self.addr1,
+            self.recipe1,
             json.loads(r.body.decode('utf-8'))
         )
         # PUT: error cases
         r = self.fetch(
-            addr_uri,
+            recipe_uri,
             method='PUT',
             headers=self.headers,
             body='it is not json',
@@ -89,38 +89,38 @@ class TestRecipeServiceApp(RecipeServiceTornadoAppTestSetup):
             RECIPE_ENTRY_URI_FORMAT_STR.format(id='1234'),
             method='PUT',
             headers=self.headers,
-            body=json.dumps(self.addr1),
+            body=json.dumps(self.recipe1),
         )
         self.assertEqual(r.code, 404)
-        # Delete that address
+        # Delete that Recipe
         r = self.fetch(
-            addr_uri,
+            recipe_uri,
             method='DELETE',
             headers=None,
         )
         self.assertEqual(r.code, 204)
         r = self.fetch(
-            addr_uri,
+            recipe_uri,
             method='GET',
             headers=None,
         )
         self.assertEqual(r.code, 404)
         # DELETE: error cases
         r = self.fetch(
-            addr_uri,
+            recipe_uri,
             method='DELETE',
             headers=None,
         )
         self.assertEqual(r.code, 404)
-        # Get all addresses in the address book, must be ZERO
+        # Get all recipes in the recipes list, must be ZERO
         r = self.fetch(
             RECIPE_ENTRY_URI_FORMAT_STR.format(id=''),
             method='GET',
             headers=None,
         )
-        all_addrs = json.loads(r.body.decode('utf-8'))
-        self.assertEqual(r.code, 200, all_addrs)
-        self.assertEqual(len(all_addrs), 0, all_addrs)
+        all_recipes = json.loads(r.body.decode('utf-8'))
+        self.assertEqual(r.code, 200, all_recipes)
+        self.assertEqual(len(all_recipes), 0, all_recipes)
 
 
 if __name__ == '__main__':

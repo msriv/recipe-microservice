@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from typing import AsyncIterator, Mapping, Tuple
 import jsonschema
@@ -13,10 +14,12 @@ class RecipeService:
         self.logger = logger
 
     def start(self):
-        self.recipes_db.start()
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.recipes_db.start())
 
     def stop(self):
-        self.recipes_db.stop()
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(self.recipes_db.stop())
 
     def validate_address(self, recipe: Mapping) -> None:
         try:

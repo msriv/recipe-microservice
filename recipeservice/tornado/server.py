@@ -80,7 +80,6 @@ def run_server(
     except KeyboardInterrupt:
         pass
     finally:
-        loop.stop()
         logutils.log(
             logger,
             logging.INFO,
@@ -93,6 +92,7 @@ def run_server(
             loop.shutdown_asyncgens()
         )
         service.stop()
+        loop.stop()
         loop.close()
         logutils.log(
             logger,

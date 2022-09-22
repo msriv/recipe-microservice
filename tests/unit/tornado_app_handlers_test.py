@@ -25,11 +25,11 @@ class RecipeServiceTornadoAppTestSetup(
     def setUp(self) -> None:
         super().setUp()
         self.headers = {'Content-Type': 'application/json; charset=UTF-8'}
-        address_data = recipes_data_suite()
-        keys = list(address_data.keys())
+        recipes_data = recipes_data_suite()
+        keys = list(recipes_data.keys())
         self.assertGreaterEqual(len(keys), 2)
-        self.addr0 = address_data[keys[0]]
-        self.addr1 = address_data[keys[1]]
+        self.recipe0 = recipes_data[keys[0]]
+        self.recipe1 = recipes_data[keys[1]]
 
     def get_app(self) -> tornado.web.Application:
         logging.config.dictConfig(TEST_CONFIG['logging'])

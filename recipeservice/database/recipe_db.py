@@ -1,7 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import json
 import os
-import sqlite3
 import aiosqlite
 from typing import AsyncIterator, Dict, Mapping, Tuple
 import uuid
@@ -12,10 +11,12 @@ from recipeservice.datamodel import RecipeEntry
 
 # Facade to handle all types of storage implementations
 class AbstractRecipeDB(metaclass=ABCMeta):
-    def start(self):
+    @abstractmethod
+    async def start(self):
         pass
 
-    def stop(self):
+    @abstractmethod
+    async def stop(self):
         pass
 
     @abstractmethod
@@ -58,6 +59,12 @@ class AbstractRecipeDB(metaclass=ABCMeta):
 class InMemoryRecipeDB(AbstractRecipeDB):
     def __init__(self):
         self.db: Dict[str, RecipeEntry] = {}
+
+    async def start(self):
+        await super().start()
+
+    async def stop(self):
+        await super().stop()
 
     async def create_recipe(self, recipe: RecipeEntry, key: str = None) -> str:
         if key is None:
@@ -102,6 +109,12 @@ class FileSystemRecipeDB(AbstractRecipeDB):
                 )
             )
         self._store = store_dir
+
+    async def start(self):
+        await super().start()
+
+    async def stop(self):
+        await super().stop()
 
     @property
     def store(self) -> str:
@@ -185,15 +198,17 @@ class FileSystemRecipeDB(AbstractRecipeDB):
 class SQLRecipeDB(AbstractRecipeDB):
     def __init__(self, cfg: Dict) -> None:
         self.cfg = cfg
-        self.conn = sqlite3.connect(self.cfg.get('sql_db_path'))
-        self.cursor = self.conn.cursor()
-        recipe_entry_table = self.cursor.execute(
+
+    async def start(self):
+        self.conn = await aiosqlite.connect(self.cfg.get('sql_db_path'))
+        recipe_entry_table = await self.conn.execute(
             """
                 SELECT name FROM sqlite_master
                 WHERE type=\'table\' AND name=(?);
-            """, ("recipe_entries",)).fetchall()
-        if recipe_entry_table == []:
-            self.cursor.execute(
+            """, ("recipe_entries",))
+
+        if await recipe_entry_table.fetchall() == []:
+            await self.conn.execute(
                 """
                     CREATE TABLE recipe_entries(
                         id VARCHAR(255),
@@ -210,16 +225,19 @@ class SQLRecipeDB(AbstractRecipeDB):
                     );
                 """
             )
-            self.conn.commit()
+            await self.conn.commit()
 
-    def _row_exists(self, key: str) -> bool:
-        rows = self.cursor.execute(
+    async def stop(self):
+        await self.conn.close()
+
+    async def _row_exists(self, key: str) -> bool:
+        rows = await self.conn.execute(
             """
                 SELECT * FROM recipe_entries WHERE id = (?)
             """, (key,)
-        ).fetchall()
+        )
 
-        if rows == []:
+        if await rows.fetchall() == []:
             return False
         else:
             return True
@@ -228,10 +246,10 @@ class SQLRecipeDB(AbstractRecipeDB):
         if key is None:
             key = uuid.uuid4().hex
 
-        if self._row_exists(key):
+        if await self._row_exists(key):
             raise KeyError('{} already exists'.format(key))
 
-        self.cursor.execute(
+        await self.conn.execute(
             """
                 INSERT INTO recipe_entries (
                     id,
@@ -261,23 +279,23 @@ class SQLRecipeDB(AbstractRecipeDB):
                 recipe.to_api_dm().get('nutrition').get('servingSize') # noqa
             )
         )
-        self.conn.commit()
+        await self.conn.commit()
         return key
 
     async def delete_recipe(self, key: str) -> None:
-        if self._row_exists(key):
-            self.cursor.execute(
+        if await self._row_exists(key):
+            await self.conn.execute(
                 """
                     DELETE FROM recipe_entries WHERE id = (?)
                 """, (key, )
             )
-            self.conn.commit()
+            await self.conn.commit()
         else:
             raise KeyError(key)
 
     async def update_recipe(self, key: str, recipe: RecipeEntry) -> None:
-        if self._row_exists(key):
-            self.cursor.execute(
+        if await self._row_exists(key):
+            await self.conn.execute(
                 """
                     UPDATE recipe_entries SET
                         name=(?),
@@ -306,12 +324,12 @@ class SQLRecipeDB(AbstractRecipeDB):
                     key
                 )
             )
-            self.conn.commit()
+            await self.conn.commit()
         else:
             raise KeyError(key)
 
     async def read_recipe(self, key: str) -> RecipeEntry:
-        if self._row_exists(key):
+        if await self._row_exists(key):
             async with aiosqlite.connect(self.cfg.get('sql_db_path')) as db:
                 db.row_factory = aiosqlite.Row
                 async with db.execute("SELECT * FROM recipe_entries WHERE id=(?)", (key, )) as cursor: # noqa

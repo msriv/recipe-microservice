@@ -1,12 +1,14 @@
 import atexit
 from io import StringIO
 import json
+import logging
 import yaml
 import tornado
 from tornado.ioloop import IOLoop
 import tornado.testing
 from recipeservice.tornado.app import make_recipeservice_app
 from data import recipes_data_suite
+from recipeservice import LOGGER_NAME
 
 IN_MEMORY_CFG_TXT = '''
 service:
@@ -30,9 +32,12 @@ class RecipeServiceTornadoAppTestSetup(
         self.addr1 = address_data[keys[1]]
 
     def get_app(self) -> tornado.web.Application:
+        logging.config.dictConfig(TEST_CONFIG['logging'])
+        logger = logging.getLogger(LOGGER_NAME)
         recipe_service, app = make_recipeservice_app(
             config=TEST_CONFIG,
-            debug=True
+            debug=True,
+            logger=logger
         )
         recipe_service.start()
         atexit.register(lambda: recipe_service.stop())

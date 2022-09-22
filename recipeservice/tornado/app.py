@@ -97,7 +97,10 @@ class BaseRequestHandler(tornado.web.RequestHandler):
 # This Handler deals with Recipe entities
 class RecipeRequestHandler(BaseRequestHandler):
     async def get(self):
-        all_recipes = await self.service.get_all_recipes()
+        all_recipes = {}
+        async for key, recipe in self.service.get_all_recipes():
+            all_recipes[key] = recipe
+
         self.set_status(200)
         self.finish(all_recipes)
 
@@ -108,12 +111,13 @@ class RecipeRequestHandler(BaseRequestHandler):
             recipe_uri = RECIPE_ENTRY_URI_FORMAT_STR.format(
                 id=id
             )
+            print("DEBUGG", recipe_uri)
             self.set_status(201)
             self.set_header('Location', recipe_uri)
             self.finish()
-        except (json.decoder.JSONDecodeError, TypeError):
+        except (json.decoder.JSONDecodeError, TypeError) as e:
             raise tornado.web.HTTPError(
-                400, reason="Invalid JSON body"
+                400, reason=str(e)
             ) from None
         except ValueError as e:
             raise tornado.web.HTTPError(400, reason=str(e))

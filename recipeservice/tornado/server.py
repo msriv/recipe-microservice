@@ -1,7 +1,7 @@
 import asyncio
 import logging
 import logging.config
-import aiotask_context as context
+import aiotask_context as context  # type: ignore
 from typing import Dict
 from recipeservice import LOGGER_NAME
 from recipeservice.tornado.app import make_recipeservice_app

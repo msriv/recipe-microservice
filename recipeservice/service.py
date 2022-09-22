@@ -1,34 +1,47 @@
 import logging
-from typing import Dict
-import uuid
+from typing import AsyncIterator, Mapping, Tuple
+import jsonschema
+
+from recipeservice import RECIPE_SCHEMA
+from recipeservice.database.db_engines import create_recipes_db
+from recipeservice.datamodel import RecipeEntry
 
 
 class RecipeService:
-    def __init__(self, config: Dict, logger: logging.Logger) -> None:
-        self.recipes: Dict[str, Dict] = {}
+    def __init__(self, config: Mapping, logger: logging.Logger) -> None:
+        self.recipes_db = create_recipes_db(config['recipes-db'])
         self.logger = logger
 
     def start(self):
-        self.recipes = {}
+        self.recipes_db.start()
 
     def stop(self):
-        pass
+        self.recipes_db.stop()
 
-    async def create_recipe(self, value: Dict) -> str:
-        recipe_id = uuid.uuid4().hex
-        self.recipes[recipe_id] = value
-        return recipe_id
+    def validate_address(self, recipe: Mapping) -> None:
+        try:
+            jsonschema.validate(recipe, RECIPE_SCHEMA)
+        except jsonschema.exceptions.ValidationError:
+            raise ValueError('JSON Schema validation failed')
 
-    async def get_recipe(self, key: str) -> Dict:
-        return self.recipes[key]
+    async def create_recipe(self, value: Mapping) -> str:
+        self.validate_address(value)
+        recipe = RecipeEntry.from_api_dm(value)
+        key = await self.recipes_db.create_recipe(recipe=recipe)
+        return key
 
-    async def get_all_recipes(self) -> Dict[str, Dict]:
-        return self.recipes
+    async def get_recipe(self, key: str) -> Mapping:
+        recipe = await self.recipes_db.read_recipe(key)
+        return recipe.to_api_dm()
 
-    async def update_recipe(self, key: str, value: Dict) -> None:
-        self.recipes[key]
-        self.recipes[key] = value
+    async def get_all_recipes(self) -> AsyncIterator[Tuple[str, Mapping]]:
+        async for key, recipe in self.recipes_db.read_all_recipes():
+            yield key, recipe.to_api_dm()
+
+    async def update_recipe(self, key: str, value: Mapping) -> None:
+        self.validate_address(value)
+        recipe = RecipeEntry.from_api_dm(value)
+        await self.recipes_db.update_recipe(key, recipe)
 
     async def delete_recipe(self, key: str) -> None:
-        self.recipes[key]
-        del self.recipes[key]
+        await self.recipes_db.delete_recipe(key)

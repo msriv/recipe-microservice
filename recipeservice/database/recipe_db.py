@@ -55,6 +55,12 @@ class AbstractRecipeDB(metaclass=ABCMeta):
     ) -> None:
         raise NotImplementedError()
 
+    @abstractmethod
+    async def clear_all_recipes(
+        self
+    ) -> None:
+        raise NotImplementedError()
+
 
 class InMemoryRecipeDB(AbstractRecipeDB):
     def __init__(self):
@@ -95,20 +101,21 @@ class InMemoryRecipeDB(AbstractRecipeDB):
 
         del self.db[key]
 
+    async def clear_all_recipes(self) -> None:
+        self.db = {}
+
 
 class FileSystemRecipeDB(AbstractRecipeDB):
-    def __init__(self, cfg: Dict):
-        store_dir = os.path.abspath(cfg.get('store_dir_path'))
-        print(store_dir)
-        if not os.path.exists(store_dir):
-            os.makedirs(store_dir)
-        if not (os.path.isdir(store_dir) and os.access(store_dir, os.W_OK)):
+    def __init__(self, store_dir_path: str):
+        if not os.path.exists(store_dir_path):
+            os.makedirs(store_dir_path)
+        if not (os.path.isdir(store_dir_path) and os.access(store_dir_path, os.W_OK)): # noqa
             raise ValueError(
                 'String store "{}" is not a writable directory'.format(
-                    store_dir
+                    store_dir_path
                 )
             )
-        self._store = store_dir
+        self._store = store_dir_path
 
     async def start(self):
         await super().start()
@@ -142,7 +149,6 @@ class FileSystemRecipeDB(AbstractRecipeDB):
             raise KeyError(key)
 
     async def _file_write(self, key: str, recipe: Mapping) -> None:
-        print(key, recipe)
         async with aiofiles.open(
             self._file_name(key),
             mode='w',
@@ -161,8 +167,8 @@ class FileSystemRecipeDB(AbstractRecipeDB):
         for f in all_files:
             if f.endswith(extn_end):
                 key = f[:-extn_len]
-                addr = await self._file_read(key)
-                yield key, addr
+                recipe = await self._file_read(key)
+                yield key, recipe
 
     async def create_recipe(self, recipe: RecipeEntry, key: str = None) -> str:
         if key is None:
@@ -194,13 +200,22 @@ class FileSystemRecipeDB(AbstractRecipeDB):
         else:
             raise KeyError(key)
 
+    async def clear_all_recipes(self) -> None:
+        all_files = os.listdir(self.store)
+        for f in all_files:
+            os.remove(os.path.join(self.store, f))
+
 
 class SQLRecipeDB(AbstractRecipeDB):
-    def __init__(self, cfg: Dict) -> None:
-        self.cfg = cfg
+    def __init__(self, sql_db_path: str) -> None:
+        self._store = sql_db_path
+
+    @property
+    def store(self) -> str:
+        return self._store
 
     async def start(self):
-        self.conn = await aiosqlite.connect(self.cfg.get('sql_db_path'))
+        self.conn = await aiosqlite.connect(self._store)
         recipe_entry_table = await self.conn.execute(
             """
                 SELECT name FROM sqlite_master
@@ -211,7 +226,7 @@ class SQLRecipeDB(AbstractRecipeDB):
             await self.conn.execute(
                 """
                     CREATE TABLE recipe_entries(
-                        id VARCHAR(255),
+                        id VARCHAR(255) PRIMARY KEY,
                         name VARCHAR(255),
                         datePublished VARCHAR(255),
                         description VARCHAR(500),
@@ -236,7 +251,6 @@ class SQLRecipeDB(AbstractRecipeDB):
                 SELECT * FROM recipe_entries WHERE id = (?)
             """, (key,)
         )
-
         if await rows.fetchall() == []:
             return False
         else:
@@ -267,16 +281,16 @@ class SQLRecipeDB(AbstractRecipeDB):
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 key,
-                recipe.to_api_dm().get('name'),
-                recipe.to_api_dm().get('datePublished'),
-                recipe.to_api_dm().get('description'),
-                recipe.to_api_dm().get('rating'),
-                recipe.to_api_dm().get('prepTime'),
-                recipe.to_api_dm().get('cookTime'),
-                ", ".join(recipe.to_api_dm().get('ingredients')),
-                ", ".join(recipe.to_api_dm().get('instructions')),
-                recipe.to_api_dm().get('nutrition').get('calories'),
-                recipe.to_api_dm().get('nutrition').get('servingSize') # noqa
+                recipe.name,
+                recipe.datePublished,
+                recipe.description,
+                recipe.rating,
+                recipe.prepTime,
+                recipe.cookTime,
+                "||".join(recipe.ingredients),
+                "||".join(recipe.instructions),
+                recipe.nutrition.get('calories'),
+                recipe.nutrition.get('servingSize') # noqa
             )
         )
         await self.conn.commit()
@@ -311,16 +325,16 @@ class SQLRecipeDB(AbstractRecipeDB):
                     WHERE
                         id=(?)
                 """, (
-                    recipe.to_api_dm().get('name'),
-                    recipe.to_api_dm().get('datePublished'),
-                    recipe.to_api_dm().get('description'),
-                    recipe.to_api_dm().get('rating'),
-                    recipe.to_api_dm().get('prepTime'),
-                    recipe.to_api_dm().get('cookTime'),
-                    ', '.join(recipe.to_api_dm().get('ingredients')), # noqa
-                    ', '.join(recipe.to_api_dm().get('instructions')), # noqa
-                    recipe.to_api_dm().get('nutrition').get('calories'), # noqa
-                    recipe.to_api_dm().get('nutrition').get('servingSize'), # noqa
+                    recipe.name,
+                    recipe.datePublished,
+                    recipe.description,
+                    recipe.rating,
+                    recipe.prepTime,
+                    recipe.cookTime,
+                    '||'.join(recipe.ingredients), # noqa
+                    '||'.join(recipe.instructions), # noqa
+                    recipe.nutrition.get('calories'), # noqa
+                    recipe.nutrition.get('servingSize'), # noqa
                     key
                 )
             )
@@ -330,7 +344,7 @@ class SQLRecipeDB(AbstractRecipeDB):
 
     async def read_recipe(self, key: str) -> RecipeEntry:
         if await self._row_exists(key):
-            async with aiosqlite.connect(self.cfg.get('sql_db_path')) as db:
+            async with aiosqlite.connect(self._store) as db:
                 db.row_factory = aiosqlite.Row
                 async with db.execute("SELECT * FROM recipe_entries WHERE id=(?)", (key, )) as cursor: # noqa
                     async for row in cursor:
@@ -341,8 +355,8 @@ class SQLRecipeDB(AbstractRecipeDB):
                             rating=row['rating'],
                             prepTime=row['prepTime'],
                             cookTime=row['cookTime'],
-                            ingredients=row['ingredients'].split(", "), # noqa
-                            instructions=row['instructions'].split(", "), # noqa
+                            ingredients=row['ingredients'].split("||"), # noqa
+                            instructions=row['instructions'].split("||"), # noqa
                             nutrition={
                                 'calories': row['calories'],
                                 'servingSize': row['servingSize']
@@ -352,7 +366,7 @@ class SQLRecipeDB(AbstractRecipeDB):
             raise KeyError(key)
 
     async def read_all_recipes(self) -> AsyncIterator[Tuple[str, Dict]]:
-        async with aiosqlite.connect(self.cfg.get('sql_db_path')) as db:
+        async with aiosqlite.connect(self._store) as db:
             db.row_factory = aiosqlite.Row
             async with db.execute("SELECT * FROM recipe_entries") as cursor:
                 async for row in cursor:
@@ -370,3 +384,11 @@ class SQLRecipeDB(AbstractRecipeDB):
                             'servingSize': row['servingSize']
                         }
                     )
+
+    async def clear_all_recipes(self) -> None:
+        await self.conn.execute(
+                """
+                    DELETE FROM recipe_entries
+                """
+            )
+        await self.conn.commit()

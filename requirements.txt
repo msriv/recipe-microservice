@@ -13,3 +13,4 @@ PyYAML==5.3
 requests==2.22.0
 tornado==6.0.3
 aiosqlite==0.17.0
+asyncio==3.4.3

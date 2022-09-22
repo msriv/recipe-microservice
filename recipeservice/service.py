@@ -12,14 +12,13 @@ class RecipeService:
     def __init__(self, config: Mapping, logger: logging.Logger) -> None:
         self.recipes_db = create_recipes_db(config['recipes-db'])
         self.logger = logger
+        self.loop = asyncio.get_event_loop()
 
     def start(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.recipes_db.start())
+        self.loop.run_until_complete(self.recipes_db.start())
 
     def stop(self):
-        loop = asyncio.get_event_loop()
-        loop.run_until_complete(self.recipes_db.stop())
+        self.loop.run_until_complete(self.recipes_db.stop())
 
     def validate_address(self, recipe: Mapping) -> None:
         try:
@@ -48,3 +47,6 @@ class RecipeService:
 
     async def delete_recipe(self, key: str) -> None:
         await self.recipes_db.delete_recipe(key)
+
+    def clear_all_recipes(self) -> None:
+        self.loop.run_until_complete(self.recipes_db.clear_all_recipes())

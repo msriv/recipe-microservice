@@ -2,10 +2,8 @@ service:
   name: recipeservice
 recipes-db:
   # memory: null
-  # fs:
-  #   store_dir_path: "./data/recipes"
-  sql:
-    sql_db_path: "./recipeservice/database/recipes.db"
+  # fs: "./data/recipes"
+  sql: "./recipeservice/database/recipes.db"
 logging:
   version: 1
   formatters:

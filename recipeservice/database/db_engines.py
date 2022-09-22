@@ -10,7 +10,7 @@ from recipeservice.database.recipe_db import (
 def create_recipes_db(recipes_db_config: Dict) -> AbstractRecipeDB:
     db_type = list(recipes_db_config.keys())[0]
     db_config = recipes_db_config[db_type]
-    
+
     return {
         'memory': lambda cfg: InMemoryRecipeDB(),
         'fs': lambda cfg: FileSystemRecipeDB(cfg),

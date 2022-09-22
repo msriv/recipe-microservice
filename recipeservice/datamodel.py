@@ -16,14 +16,14 @@ class RecipeEntry:
     def __init__(
         self,
         name: str,
-        datePublished: date,
-        description: str,
-        rating: float,
-        prepTime: time,
-        cookTime: time,
         ingredients: Sequence[str],
         instructions: Sequence[str],
-        nutrition: Dict[str, Optional[Union[int, str]]]
+        datePublished: date = None,
+        description: str = None,
+        rating: float = None,
+        prepTime: time = None,
+        cookTime: time = None,
+        nutrition: Dict[str, Optional[Union[int, str]]] = None
     ):
         if not name:
             raise ValueError(

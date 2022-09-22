@@ -10,7 +10,7 @@ RECIPE_SERVICE_TEST_DATA_DIR = os.path.abspath(os.path.dirname(__file__))
 
 RECIPE_DATA_DIR = os.path.abspath(os.path.join(
     RECIPE_SERVICE_TEST_DATA_DIR,
-    'test_data'
+    'test_data/fs/'
 ))
 
 RECIPE_FILES = glob.glob(RECIPE_DATA_DIR + '/*.json')
@@ -22,9 +22,9 @@ def recipes_data_suite(
     recipes_data_suite = {}
 
     for fname in json_files:
-        nickname = os.path.splitext(os.path.basename(fname))[0]
+        key = os.path.splitext(os.path.basename(fname))[0]
         with open(fname, mode='r', encoding='utf-8') as f:
             recipe_json = json.load(f)
-            recipes_data_suite[nickname] = recipe_json
+            recipes_data_suite[key] = recipe_json
 
     return recipes_data_suite

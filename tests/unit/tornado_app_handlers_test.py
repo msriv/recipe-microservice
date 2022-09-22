@@ -13,6 +13,14 @@ from recipeservice import LOGGER_NAME
 IN_MEMORY_CFG_TXT = '''
 service:
   name: Recipe Test
+
+recipes-db:
+  memory: null
+
+logging:
+  version: 1
+  root:
+    level: ERROR
 '''
 
 with StringIO(IN_MEMORY_CFG_TXT) as f:

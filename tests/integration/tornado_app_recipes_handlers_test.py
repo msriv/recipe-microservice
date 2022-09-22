@@ -19,6 +19,7 @@ class TestRecipeServiceApp(RecipeServiceTornadoAppTestSetup):
             method='GET',
             headers=None,
         )
+        print("DEBUG", r)
         all_recipes = json.loads(r.body.decode('utf-8'))
         self.assertEqual(r.code, 200, all_recipes)
         self.assertEqual(len(all_recipes), 0, all_recipes)

@@ -115,9 +115,9 @@ class RecipeRequestHandler(BaseRequestHandler):
             self.set_status(201)
             self.set_header('Location', recipe_uri)
             self.finish()
-        except (json.decoder.JSONDecodeError, TypeError) as e:
+        except (json.decoder.JSONDecodeError, TypeError):
             raise tornado.web.HTTPError(
-                400, reason=str(e)
+                400, reason='Invalid JSON body'
             ) from None
         except ValueError as e:
             raise tornado.web.HTTPError(400, reason=str(e))

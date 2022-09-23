@@ -1,7 +1,9 @@
+import aiotask_context as context  # type: ignore
 import atexit
 from io import StringIO
 import json
 import logging
+import logging.config
 import yaml
 import tornado
 from tornado.ioloop import IOLoop
@@ -42,17 +44,21 @@ class RecipeServiceTornadoAppTestSetup(
     def get_app(self) -> tornado.web.Application:
         logging.config.dictConfig(TEST_CONFIG['logging'])
         logger = logging.getLogger(LOGGER_NAME)
+
         recipe_service, app = make_recipeservice_app(
             config=TEST_CONFIG,
             debug=True,
             logger=logger
         )
         recipe_service.start()
+
         atexit.register(lambda: recipe_service.stop())
         return app
 
     def get_new_ioloop(self):
-        return IOLoop.current()
+        instance = IOLoop.current()
+        instance.asyncio_loop.set_task_factory(context.task_factory)
+        return instance
 
 
 class RecipeServiceTornadoAppUnitTests(
